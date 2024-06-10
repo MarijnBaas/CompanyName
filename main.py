@@ -6,6 +6,7 @@ import seaborn as sns
 import sklearn as sk
 from rdkit import Chem
 from rdkit.Chem import Draw
+from rdkit.Chem import AllChem
 
 def read_data(file):
     """
@@ -35,10 +36,22 @@ def draw_molecule(molecule_data):
 
     plt.show()
 
+def calculate_fingerprints(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    return AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=1024)
+
+
+
 
 # Example
 file = 'tested_molecules.csv'
 df = read_data('tested_molecules.csv')
 
-draw_molecule(df)
+# Apply the function to the 'SMILES' column
+df['Fingerprints'] = df['SMILES'].apply(calculate_fingerprints)
+
+df['Fingerprints'] = df['Fingerprints'].apply(lambda fp: list(fp))
+
+# Save the dataframe to a new file
+df.to_csv('modified_molecules.csv', index=False)
 
