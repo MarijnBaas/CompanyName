@@ -43,6 +43,7 @@ def calculate_fingerprints(smiles):
 
 
 
+
 # Example
 file = 'tested_molecules.csv'
 df = read_data('tested_molecules.csv')
