@@ -48,7 +48,7 @@ properties_df = data['SMILES'].apply(lambda x: pd.Series(compute_properties(x)))
 pharmacophore_df = data['SMILES'].apply(lambda x: pd.Series(compute_pharmacophore(x)))
 
 # Combine all features
-combined_features_df = pd.concat([fingerprints_df, properties_df, pharmacophore_df], axis=1)
+combined_features_df = pd.concat([properties_df, pharmacophore_df], axis=1)
 
 def prepare_data(data, target):
     # Prepare feature and target variables
