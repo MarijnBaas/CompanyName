@@ -1,0 +1,48 @@
+import ast
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+properties = mod_df['Fingerprints'].apply(ast.literal_eval)
+properties_df = pd.DataFrame(properties.tolist())
+
+# Concatenate the molecule names and target variables with the new properties dataframe
+data = pd.concat([mod_df[['SMILES', 'PKM2_inhibition', 'ERK2_inhibition']], properties_df], axis=1)
+
+# Exclude 'Molecule' and target columns from features
+X = data.drop(columns=['SMILES', 'PKM2_inhibition', 'ERK2_inhibition'])  # Features
+targets = ['PKM2_inhibition', 'ERK2_inhibition']  # List of target variables
+
+# Function to train and evaluate Random Forest for each target variable
+def analyze_target(X, y, target_name):
+    #Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+    #Train the Random Forest model on the training data
+    rf_model = RandomForestClassifier(random_state=42)
+    rf_model.fit(X_train, y_train)
+
+    #Evaluate the model on the testing data
+    y_pred = rf_model.predict(X_test)
+    print(f"Classification Report for {target_name}:")
+    print(classification_report(y_test, y_pred))
+
+    #Analyze feature importance
+    feature_importance = pd.DataFrame({'Feature': X.columns, 'Importance': rf_model.feature_importances_})
+    feature_importance = feature_importance.sort_values(by='Importance', ascending=False)
+
+    #Display feature importance
+    print(f"Feature Importance for {target_name}:")
+    print(feature_importance)
+
+    plt.figure(figsize=(10, 6))
+    plt.barh(feature_importance['Feature'], feature_importance['Importance'])
+    plt.xlabel('Feature Importance')
+    plt.ylabel('Feature')
+    plt.title(f'Feature Importance from Random Forest for {target_name}')
+    plt.gca().invert_yaxis()
+    plt.show()
+
+for target in targets:
+    y = mod_df[target]
+    analyze_target(X, y, target)
