@@ -10,7 +10,7 @@ from keras.layers import Dense, Dropout
 from keras.callbacks import EarlyStopping
 
 # Load the dataset
-data = pd.read_csv("C:/Users/20223809/Desktop/Universiteit/Jaar 2/Q4/Group Assignment/CompanyName/tested_molecules.csv")
+data = pd.read_csv("tested_molecules.csv")
 
 # Function to compute physicochemical properties
 def compute_properties(smiles):
@@ -18,7 +18,13 @@ def compute_properties(smiles):
     properties = {
         'Ipc': Descriptors.Ipc(molecule),
         'BertzCT': Descriptors.BertzCT(molecule),
-        'MolWt': Descriptors.MolWt(molecule)
+        'MolLogP': Descriptors.MolLogP(molecule),
+        'Ipc': Descriptors.Ipc(molecule),
+        'MolWt': Descriptors.MolWt(molecule),
+        'NumRotatableBonds': Descriptors.NumRotatableBonds(molecule),
+        'NumHeteroatoms': Descriptors.NumHeteroatoms(molecule),
+        'NumHAcceptors': Descriptors.NumHAcceptors(molecule),
+        'NumHDonors': Descriptors.NumHDonors(molecule),
     }
     return properties
 
@@ -28,8 +34,6 @@ def compute_pharmacophore(smiles):
     pharmacophore = {
         'NumAromaticRings': rdMolDescriptors.CalcNumAromaticRings(molecule),
         'NumSaturatedRings': rdMolDescriptors.CalcNumSaturatedRings(molecule),
-        'NumRotatableBonds': Descriptors.NumRotatableBonds(molecule),
-        'NumHeteroatoms': Descriptors.NumHeteroatoms(molecule)
     }
     return pharmacophore
 
