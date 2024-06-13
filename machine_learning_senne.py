@@ -87,3 +87,35 @@ accuracy_ERK2_rf = accuracy_score(y_test_ERK2, y_pred_ERK2_rf)
 print("Random Forest Accuracy for PKM2_inhibition:", accuracy_PKM2_rf)
 
 print("Random Forest Accuracy for ERK2_inhibition:", accuracy_ERK2_rf)
+
+
+# Load the untested dataset
+untested_data = pd.read_csv('untested_molecules.csv')
+
+# Apply the functions to the untested data
+untested_data['Fingerprints'] = untested_data['SMILES'].apply(lambda x: smiles_to_fingerprints(x).ToBitString())
+untested_data = untested_data.dropna(subset=['Fingerprints'])
+
+untested_fingerprints_df = untested_data['Fingerprints'].apply(lambda x: pd.Series(list(map(int, x)))).fillna(0)
+untested_fingerprints_df.columns = [f'Bit_{i}' for i in range(untested_fingerprints_df.shape[1])]
+
+untested_properties_df = untested_data['SMILES'].apply(lambda x: pd.Series(compute_properties(x))).fillna(0)
+untested_pharmacophore_df = untested_data['SMILES'].apply(lambda x: pd.Series(compute_pharmacophore(x))).fillna(0)
+
+# Combine all features for untested data
+untested_combined_features_df = pd.concat([untested_properties_df, untested_pharmacophore_df], axis=1)
+
+# Predict on the untested data
+untested_PKM2_predictions = rf_PKM2.predict(untested_combined_features_df)
+untested_ERK2_predictions = rf_ERK2.predict(untested_combined_features_df)
+
+# Write the predictions to the original csv file
+untested_data['PKM2_inhibition'] = untested_PKM2_predictions
+untested_data['ERK2_inhibition'] = untested_ERK2_predictions
+
+# Save the modified dataframe to a new csv file
+untested_data.to_csv('untested_molecules_predictions.csv', index=False)
+
+print(untested_data['PKM2_inhibition'])
+count_ones = untested_data['PKM2_inhibition'].value_counts()[1]
+print("Number of occurrences of 1:", count_ones)
