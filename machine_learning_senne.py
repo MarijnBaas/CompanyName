@@ -9,11 +9,6 @@ from sklearn.metrics import accuracy_score
 # Load the dataset
 data = pd.read_csv('tested_molecules.csv')
 
-# Function to convert SMILES to different fingerprints
-def smiles_to_fingerprints(smiles, radius=2, nBits=1024):
-    molecule = Chem.MolFromSmiles(smiles)
-    return AllChem.GetMorganFingerprintAsBitVect(molecule, radius, nBits)
-
 # Function to compute physicochemical properties
 def compute_properties(smiles):
     molecule = Chem.MolFromSmiles(smiles)
@@ -38,11 +33,6 @@ def compute_pharmacophore(smiles):
     return pharmacophore
 
 # Apply the functions to the data
-data['Fingerprints'] = data['SMILES'].apply(lambda x: smiles_to_fingerprints(x).ToBitString())
-data = data.dropna(subset=['Fingerprints'])
-
-fingerprints_df = data['Fingerprints'].apply(lambda x: pd.Series(list(map(int, x))))
-fingerprints_df.columns = [f'Bit_{i}' for i in range(fingerprints_df.shape[1])]
 
 properties_df = data['SMILES'].apply(lambda x: pd.Series(compute_properties(x)))
 pharmacophore_df = data['SMILES'].apply(lambda x: pd.Series(compute_pharmacophore(x)))
