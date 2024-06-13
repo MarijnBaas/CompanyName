@@ -141,3 +141,33 @@ print("True Positives (TP):", tp_ERK2)
 print("False Positives (FP):", fp_ERK2)
 print("True Negatives (TN):", tn_ERK2)
 print("False Negatives (FN):", fn_ERK2)
+
+# Load the untested dataset
+untested_data = pd.read_csv("untested_molecules.csv")
+
+# Compute features for untested molecules
+untested_properties_df = untested_data['SMILES'].apply(lambda x: pd.Series(compute_properties(x)))
+untested_pharmacophore_df = untested_data['SMILES'].apply(lambda x: pd.Series(compute_pharmacophore(x)))
+
+# Combine all features for untested molecules
+untested_combined_features_df = pd.concat([untested_properties_df, untested_pharmacophore_df], axis=1)
+
+# Standardize the features for untested molecules
+untested_combined_features_df = scaler.transform(untested_combined_features_df)
+
+# Predict on the untested set for PKM2
+untested_pred_PKM2_nn = (model_PKM2.predict(untested_combined_features_df) > 0.5).astype(int)
+
+# Predict on the untested set for ERK2
+untested_pred_ERK2_nn = (model_ERK2.predict(untested_combined_features_df) > 0.5).astype(int)
+
+# Print the predictions for untested molecules
+print("Predictions for untested molecules (PKM2_inhibition):")
+print(untested_pred_PKM2_nn)
+
+print("\nPredictions for untested molecules (ERK2_inhibition):")
+print(untested_pred_ERK2_nn)
+
+# Count the values in the predictions for untested molecules
+print(pd.Series(untested_pred_PKM2_nn.flatten()).value_counts())
+print(pd.Series(untested_pred_ERK2_nn.flatten()).value_counts())
