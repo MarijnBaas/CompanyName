@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors, rdMolDescriptors
@@ -175,6 +176,82 @@ def build_model(input_dim):
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
+def calculate_confusion_matrix(y_true, y_pred):
+    """
+    Calculate the confusion matrix.
+
+    Args:
+    - y_true (array-like): True labels.
+    - y_pred (array-like): Predicted labels.
+
+    Returns:
+    - tn (int): True negatives.
+    - fp (int): False positives.
+    - fn (int): False negatives.
+    - tp (int): True positives.
+    """
+    cm = confusion_matrix(y_true, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+    return tn, fp, fn, tp
+
+def calculate_metrics(y_true, y_pred):
+    """
+    Calculate the evaluation metrics.
+
+    Args:
+    - y_true (array-like): True labels.
+    - y_pred (array-like): Predicted labels.
+
+    Returns:
+    - accuracy (float): Accuracy.
+    - precision (float): Precision.
+    - recall (float): Recall.
+    - f1_score (float): F1 score.
+    - roc_auc (float): ROC AUC score.
+    - pr_auc (float): PR AUC score.
+    """
+    accuracy = accuracy_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred, zero_division=1)
+    recall = recall_score(y_true, y_pred)
+    f1_score = f1_score(y_true, y_pred)
+    roc_auc = roc_auc_score(y_true, y_pred)
+    pr_auc = average_precision_score(y_true, y_pred)
+    return accuracy, precision, recall, f1_score, roc_auc, pr_auc
+
+def plot_metrics(history_PKM2, history_ERK2):
+    """
+    Plot the accuracy and loss metrics for PKM2 and ERK2 inhibition.
+
+    Args:
+    - history_PKM2 (History): Training history for PKM2 inhibition.
+    - history_ERK2 (History): Training history for ERK2 inhibition.
+    """
+    import matplotlib.pyplot as plt
+
+    # Plot the accuracy and val_loss for PKM2 inhibition
+    plt.figure(figsize=(10, 6))
+    plt.plot(history_PKM2.history['accuracy'], label='Train Accuracy')
+    plt.plot(history_PKM2.history['val_accuracy'], label='Validation Accuracy')
+    plt.plot(history_PKM2.history['loss'], label='Train Loss')
+    plt.plot(history_PKM2.history['val_loss'], label='Validation Loss')
+    plt.title('Neural Network Metrics for PKM2 Inhibition')
+    plt.xlabel('Epochs')
+    plt.ylabel('Metrics')
+    plt.legend()
+    plt.show()
+
+    # Plot the accuracy and val_loss for ERK2 inhibition
+    plt.figure(figsize=(10, 6))
+    plt.plot(history_ERK2.history['accuracy'], label='Train Accuracy')
+    plt.plot(history_ERK2.history['val_accuracy'], label='Validation Accuracy')
+    plt.plot(history_ERK2.history['loss'], label='Train Loss')
+    plt.plot(history_ERK2.history['val_loss'], label='Validation Loss')
+    plt.title('Neural Network Metrics for ERK2 Inhibition')
+    plt.xlabel('Epochs')
+    plt.ylabel('Metrics')
+    plt.legend()
+    plt.show()
+
 # Compute physicochemical properties for all molecules for PKM2 inhibition
 properties_PKM2_df = data['SMILES'].apply(lambda x: pd.Series(compute_properties(x, 'PKM2_inhibition')))
 
@@ -212,28 +289,16 @@ print(y_pred_PKM2_nn)
 y_pred_ERK2_nn = (model_ERK2.predict(X_test_ERK2) > 0.5).astype(int)
 
 # Calculate the confusion matrix for PKM2 inhibition
-cm_PKM2 = confusion_matrix(y_test_PKM2, y_pred_PKM2_nn)
-tn_PKM2, fp_PKM2, fn_PKM2, tp_PKM2 = cm_PKM2.ravel()
+tn_PKM2, fp_PKM2, fn_PKM2, tp_PKM2 = calculate_confusion_matrix(y_test_PKM2, y_pred_PKM2_nn)
 
 # Calculate the confusion matrix for ERK2 inhibition
-cm_ERK2 = confusion_matrix(y_test_ERK2, y_pred_ERK2_nn)
-tn_ERK2, fp_ERK2, fn_ERK2, tp_ERK2 = cm_ERK2.ravel()
+tn_ERK2, fp_ERK2, fn_ERK2, tp_ERK2 = calculate_confusion_matrix(y_test_ERK2, y_pred_ERK2_nn)
 
 # Calculate the metrics for PKM2 inhibition
-accuracy_PKM2_nn = accuracy_score(y_test_PKM2, y_pred_PKM2_nn)
-precision_PKM2_nn = precision_score(y_test_PKM2, y_pred_PKM2_nn, zero_division=1)
-recall_PKM2_nn = recall_score(y_test_PKM2, y_pred_PKM2_nn)
-f1_PKM2_nn = f1_score(y_test_PKM2, y_pred_PKM2_nn)
-roc_auc_PKM2_nn = roc_auc_score(y_test_PKM2, y_pred_PKM2_nn)
-pr_auc_PKM2_nn = average_precision_score(y_test_PKM2, y_pred_PKM2_nn)
+accuracy_PKM2_nn, precision_PKM2_nn, recall_PKM2_nn, f1_PKM2_nn, roc_auc_PKM2_nn, pr_auc_PKM2_nn = calculate_metrics(y_test_PKM2, y_pred_PKM2_nn)
 
 # Calculate the metrics for ERK2 inhibition
-accuracy_ERK2_nn = accuracy_score(y_test_ERK2, y_pred_ERK2_nn)
-precision_ERK2_nn = precision_score(y_test_ERK2, y_pred_ERK2_nn, zero_division=1)
-recall_ERK2_nn = recall_score(y_test_ERK2, y_pred_ERK2_nn)
-f1_ERK2_nn = f1_score(y_test_ERK2, y_pred_ERK2_nn)
-roc_auc_ERK2_nn = roc_auc_score(y_test_ERK2, y_pred_ERK2_nn)
-pr_auc_ERK2_nn = average_precision_score(y_test_ERK2, y_pred_ERK2_nn)
+accuracy_ERK2_nn, precision_ERK2_nn, recall_ERK2_nn, f1_ERK2_nn, roc_auc_ERK2_nn, pr_auc_ERK2_nn = calculate_metrics(y_test_ERK2, y_pred_ERK2_nn)
 
 # Print the metrics for PKM2 inhibition
 print("Neural Network Metrics for PKM2_inhibition:")
@@ -261,6 +326,9 @@ print("False Positives (FP):", fp_ERK2)
 print("True Negatives (TN):", tn_ERK2)
 print("False Negatives (FN):", fn_ERK2)
 
+# Plot the accuracy and loss metrics for PKM2 and ERK2 inhibition
+plot_metrics(history_PKM2, history_ERK2)
+
 # Load the untested dataset
 untested_data = pd.read_csv("untested_molecules.csv")
 
@@ -282,44 +350,7 @@ untested_pred_PKM2_nn = (model_PKM2.predict(untested_combined_features_PKM2) > 0
 # Predict on the untested set for ERK2 inhibition
 untested_pred_ERK2_nn = (model_ERK2.predict(untested_combined_features_ERK2) > 0.5).astype(int)
 
-# Print the predictions for untested molecules for PKM2 inhibition
-print("Predictions for untested molecules (PKM2_inhibition):")
-print(untested_pred_PKM2_nn)
-
-# Print the predictions for untested molecules for ERK2 inhibition
-print("\nPredictions for untested molecules (ERK2_inhibition):")
-print(untested_pred_ERK2_nn)
-
-# Count the values in the predictions for untested molecules for PKM2 inhibition
-print("\nPrediction counts for PKM2_inhibition:")
-print(pd.Series(untested_pred_PKM2_nn.flatten()).value_counts())
-
-# Count the values in the predictions for untested molecules for ERK2 inhibition
-print("\nPrediction counts for ERK2_inhibition:")
-print(pd.Series(untested_pred_ERK2_nn.flatten()).value_counts())
-
-import matplotlib.pyplot as plt
-
-# Plot the accuracy and val_loss for PKM2 inhibition
-plt.figure(figsize=(10, 6))
-plt.plot(history_PKM2.history['accuracy'], label='Train Accuracy')
-plt.plot(history_PKM2.history['val_accuracy'], label='Validation Accuracy')
-plt.plot(history_PKM2.history['loss'], label='Train Loss')
-plt.plot(history_PKM2.history['val_loss'], label='Validation Loss')
-plt.title('Neural Network Metrics for PKM2 Inhibition')
-plt.xlabel('Epochs')
-plt.ylabel('Metrics')
-plt.legend()
-plt.show()
-
-# Plot the accuracy and val_loss for ERK2 inhibition
-plt.figure(figsize=(10, 6))
-plt.plot(history_ERK2.history['accuracy'], label='Train Accuracy')
-plt.plot(history_ERK2.history['val_accuracy'], label='Validation Accuracy')
-plt.plot(history_ERK2.history['loss'], label='Train Loss')
-plt.plot(history_ERK2.history['val_loss'], label='Validation Loss')
-plt.title('Neural Network Metrics for ERK2 Inhibition')
-plt.xlabel('Epochs')
-plt.ylabel('Metrics')
-plt.legend()
-plt.show()
+# Save the predictions to the untested data file
+untested_data['PKM2_inhibition'] = untested_pred_PKM2_nn
+untested_data['ERK2_inhibition'] = untested_pred_ERK2_nn
+untested_data.to_csv("untested_molecules_predictions.csv", index=False)
