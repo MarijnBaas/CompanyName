@@ -64,20 +64,35 @@ def compute_properties(smiles, target):
         })
 
     return properties
+    
+# Function to compute physicochemical properties for PKM2 and ERK2 inhibition
+def compute_properties(smiles, target):
+    """
+    Compute the properties of a molecule based on its SMILES string using RDKit.
+    
+    Args:
+    - smiles (str): SMILES string of the molecule.
+    - target (str): Target for inhibition prediction ('PKM2_inhibition' or 'ERK2_inhibition').
+    
+    Returns:
+    - properties (dict): Dictionary containing computed properties.
+    """
+    molecule = Chem.MolFromSmiles(smiles)
+    properties = {
+        'MolLogP': Descriptors.MolLogP(molecule),
+        'MolWt': Descriptors.MolWt(molecule),
+        'NumRotatableBonds': Descriptors.NumRotatableBonds(molecule),
+        'NumHAcceptors': Descriptors.NumHAcceptors(molecule),
+        'NumHDonors': Descriptors.NumHDonors(molecule),
+        'TPSA': Descriptors.TPSA(molecule),
+    }
+    
+    # Additional properties specific to PKM2 inhibition
+    if target == 'PKM2_inhibition':
+        # Add PKM2 specific properties here
+        pass
 
-# Compute physicochemical properties for all molecules for PKM2 inhibition
-properties_PKM2_df = data['SMILES'].apply(lambda x: pd.Series(compute_properties(x, 'PKM2_inhibition')))
-
-# Compute physicochemical properties for all molecules for ERK2 inhibition
-properties_ERK2_df = data['SMILES'].apply(lambda x: pd.Series(compute_properties(x, 'ERK2_inhibition')))
-
-# Standardize the features for PKM2 inhibition
-scaler_PKM2 = StandardScaler()
-combined_features_PKM2 = scaler_PKM2.fit_transform(properties_PKM2_df)
-
-# Standardize the features for ERK2 inhibition
-scaler_ERK2 = StandardScaler()
-combined_features_ERK2 = scaler_ERK2.fit_transform(properties_ERK2_df)
+    return properties
 
 # Apply SMOTE to handle imbalanced dataset
 def apply_smote(X, y):
@@ -115,18 +130,13 @@ def prepare_data_PKM2(data):
 
     # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    # Apply SMOTE
-    X_train_res, y_train_res = apply_smote(X_train, y_train)
-
-    return X_train_res, X_test, y_train_res, y_test
-
-X_train_PKM2, X_test_PKM2, y_train_PKM2, y_test_PKM2 = prepare_data_PKM2(data)
+    X_train_resampled, y_train_resampled = apply_smote(X_train, y_train)
+    return X_train_resampled, X_test, y_train_resampled, y_test
 
 # Prepare the data for ERK2 inhibition
 def prepare_data_ERK2(data):
     """
-    Prepare data specific to ERK2 inhibition prediction.
+    Prepare data for ERK2 inhibition.
 
     Args:
     - data (DataFrame): DataFrame containing molecule SMILES and 'ERK2_inhibition' label.
@@ -142,13 +152,8 @@ def prepare_data_ERK2(data):
 
     # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    # Apply SMOTE
-    X_train_res, y_train_res = apply_smote(X_train, y_train)
-
-    return X_train_res, X_test, y_train_res, y_test
-
-X_train_ERK2, X_test_ERK2, y_train_ERK2, y_test_ERK2 = prepare_data_ERK2(data)
+    X_train_resampled, y_train_resampled = apply_smote(X_train, y_train)
+    return X_train_resampled, X_test, y_train_resampled, y_test
 
 # Define the neural network model
 def build_model(input_dim):
@@ -156,28 +161,48 @@ def build_model(input_dim):
     Build a neural network model for inhibition prediction.
 
     Args:
-    - input_dim (int): Number of features in the input data.
+    - input_dim (int): Dimension of the input features.
 
     Returns:
-    - model (Sequential): Compiled Keras Sequential model.
+    - model (Sequential): Compiled neural network model.
     """
     model = Sequential()
-    model.add(Dense(64, input_dim=input_dim, activation='relu'))
+    model.add(Dense(64, activation='relu', input_dim=input_dim))
     model.add(Dropout(0.5))
     model.add(Dense(32, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
+
+# Compute physicochemical properties for all molecules for PKM2 inhibition
+properties_PKM2_df = data['SMILES'].apply(lambda x: pd.Series(compute_properties(x, 'PKM2_inhibition')))
+
+# Compute physicochemical properties for all molecules for ERK2 inhibition
+properties_ERK2_df = data['SMILES'].apply(lambda x: pd.Series(compute_properties(x, 'ERK2_inhibition')))
+
+# Standardize the features for PKM2 inhibition
+scaler_PKM2 = StandardScaler()
+combined_features_PKM2 = scaler_PKM2.fit_transform(properties_PKM2_df)
+
+# Standardize the features for ERK2 inhibition
+scaler_ERK2 = StandardScaler()
+combined_features_ERK2 = scaler_ERK2.fit_transform(properties_ERK2_df)
+
+# Prepare the data for PKM2 inhibition
+X_train_PKM2, X_test_PKM2, y_train_PKM2, y_test_PKM2 = prepare_data_PKM2(data)
+
+# Prepare the data for ERK2 inhibition
+X_train_ERK2, X_test_ERK2, y_train_ERK2, y_test_ERK2 = prepare_data_ERK2(data)
 
 # Build and train the model for PKM2 inhibition
 model_PKM2 = build_model(X_train_PKM2.shape[1])
 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-history_PKM2 = model_PKM2.fit(X_train_PKM2, y_train_PKM2, epochs=100, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
+history_PKM2 = model_PKM2.fit(X_train_PKM2, y_train_PKM2, epochs=30, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
 
 # Build and train the model for ERK2 inhibition
 model_ERK2 = build_model(X_train_ERK2.shape[1])
-history_ERK2 = model_ERK2.fit(X_train_ERK2, y_train_ERK2, epochs=100, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
+history_ERK2 = model_ERK2.fit(X_train_ERK2, y_train_ERK2, epochs=30, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
 
 # Predict on the test set for PKM2 inhibition
 y_pred_PKM2_nn = (model_PKM2.predict(X_test_PKM2) > 0.5).astype(int)
