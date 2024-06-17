@@ -119,11 +119,11 @@ def build_model(input_dim):
 # Build and train the model for PKM2 inhibition
 model_PKM2 = build_model(X_train_PKM2.shape[1])
 early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-model_PKM2.fit(X_train_PKM2, y_train_PKM2, epochs=100, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
+history_PKM2 = model_PKM2.fit(X_train_PKM2, y_train_PKM2, epochs=100, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
 
 # Build and train the model for ERK2 inhibition
 model_ERK2 = build_model(X_train_ERK2.shape[1])
-model_ERK2.fit(X_train_ERK2, y_train_ERK2, epochs=100, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
+history_ERK2 = model_ERK2.fit(X_train_ERK2, y_train_ERK2, epochs=100, batch_size=32, validation_split=0.2, callbacks=[early_stopping])
 
 # Predict on the test set for PKM2 inhibition
 y_pred_PKM2_nn = (model_PKM2.predict(X_test_PKM2) > 0.5).astype(int)
@@ -217,3 +217,29 @@ print(pd.Series(untested_pred_PKM2_nn.flatten()).value_counts())
 # Count the values in the predictions for untested molecules for ERK2 inhibition
 print("\nPrediction counts for ERK2_inhibition:")
 print(pd.Series(untested_pred_ERK2_nn.flatten()).value_counts())
+
+import matplotlib.pyplot as plt
+
+# Plot the accuracy and val_loss for PKM2 inhibition
+plt.figure(figsize=(10, 6))
+plt.plot(history_PKM2.history['accuracy'], label='Train Accuracy')
+plt.plot(history_PKM2.history['val_accuracy'], label='Validation Accuracy')
+plt.plot(history_PKM2.history['loss'], label='Train Loss')
+plt.plot(history_PKM2.history['val_loss'], label='Validation Loss')
+plt.title('Neural Network Metrics for PKM2 Inhibition')
+plt.xlabel('Epochs')
+plt.ylabel('Metrics')
+plt.legend()
+plt.show()
+
+# Plot the accuracy and val_loss for ERK2 inhibition
+plt.figure(figsize=(10, 6))
+plt.plot(history_ERK2.history['accuracy'], label='Train Accuracy')
+plt.plot(history_ERK2.history['val_accuracy'], label='Validation Accuracy')
+plt.plot(history_ERK2.history['loss'], label='Train Loss')
+plt.plot(history_ERK2.history['val_loss'], label='Validation Loss')
+plt.title('Neural Network Metrics for ERK2 Inhibition')
+plt.xlabel('Epochs')
+plt.ylabel('Metrics')
+plt.legend()
+plt.show()
