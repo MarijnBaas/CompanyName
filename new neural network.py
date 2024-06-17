@@ -14,6 +14,16 @@ data = pd.read_csv("tested_molecules.csv")
 
 # Function to compute physicochemical properties for PKM2 and ERK2 inhibition
 def compute_properties(smiles, target):
+    """
+    Compute the properties of a molecule based on its SMILES string using RDKit.
+    
+    Args:
+    - smiles (str): SMILES string of the molecule.
+    - target (str): Target for inhibition prediction ('PKM2_inhibition' or 'ERK2_inhibition').
+    
+    Returns:
+    - properties (dict): Dictionary containing computed properties.
+    """
     molecule = Chem.MolFromSmiles(smiles)
     properties = {
         'MolLogP': Descriptors.MolLogP(molecule),
@@ -71,12 +81,35 @@ combined_features_ERK2 = scaler_ERK2.fit_transform(properties_ERK2_df)
 
 # Apply SMOTE to handle imbalanced dataset
 def apply_smote(X, y):
+    """
+    Apply Synthetic Minority Over-sampling Technique (SMOTE) to balance the dataset before training the model.
+    
+    Args:
+    - X (array): Feature matrix
+    - y (array): Target labels
+    
+    Returns:
+    - X_resampled (array): Resampled feature matrix.
+    - y_resampled (array): Resampled target labels.
+    """
     smote = SMOTE(random_state=42)
     X_res, y_res = smote.fit_resample(X, y)
     return X_res, y_res
 
 # Prepare the data for PKM2 inhibition
 def prepare_data_PKM2(data):
+    """
+    Prepare data for PKM2 inhibition.
+
+    Args:
+    - data (DataFrame): DataFrame containing molecule SMILES and 'PKM2_inhibition' label.
+
+    Returns:
+    - X_train (array): Resampled training features for PKM2 inhibition.
+    - X_test (array): Testing features for PKM2 inhibition.
+    - y_train (array): Resampled training labels for PKM2 inhibition.
+    - y_test (array): Testing labels for PKM2 inhibition.
+    """
     X = combined_features_PKM2
     y = data['PKM2_inhibition']
 
@@ -92,6 +125,18 @@ X_train_PKM2, X_test_PKM2, y_train_PKM2, y_test_PKM2 = prepare_data_PKM2(data)
 
 # Prepare the data for ERK2 inhibition
 def prepare_data_ERK2(data):
+    """
+    Prepare data specific to ERK2 inhibition prediction.
+
+    Args:
+    - data (DataFrame): DataFrame containing molecule SMILES and 'ERK2_inhibition' label.
+
+    Returns:
+    - X_train (array): Resampled training features for ERK2 inhibition.
+    - X_test (array): Testing features for ERK2 inhibition.
+    - y_train (array): Resampled training labels for ERK2 inhibition.
+    - y_test (array): Testing labels for ERK2 inhibition.
+    """
     X = combined_features_ERK2
     y = data['ERK2_inhibition']
 
@@ -107,6 +152,15 @@ X_train_ERK2, X_test_ERK2, y_train_ERK2, y_test_ERK2 = prepare_data_ERK2(data)
 
 # Define the neural network model
 def build_model(input_dim):
+    """
+    Build a neural network model for inhibition prediction.
+
+    Args:
+    - input_dim (int): Number of features in the input data.
+
+    Returns:
+    - model (Sequential): Compiled Keras Sequential model.
+    """
     model = Sequential()
     model.add(Dense(64, input_dim=input_dim, activation='relu'))
     model.add(Dropout(0.5))
@@ -127,6 +181,7 @@ history_ERK2 = model_ERK2.fit(X_train_ERK2, y_train_ERK2, epochs=100, batch_size
 
 # Predict on the test set for PKM2 inhibition
 y_pred_PKM2_nn = (model_PKM2.predict(X_test_PKM2) > 0.5).astype(int)
+print(y_pred_PKM2_nn)
 
 # Predict on the test set for ERK2 inhibition
 y_pred_ERK2_nn = (model_ERK2.predict(X_test_ERK2) > 0.5).astype(int)
